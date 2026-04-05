@@ -158,7 +158,7 @@ server <- function (input, output, session) {
     line <- train_line()
     user_filter <- if (user == '' || is.null(user) || is.na(user)) quo(TRUE) else quo(USER %in% user)
     date_filter <- if (is.null(date)) quo(TRUE) else quo(DATE %in% date) 
-    time_filter <- if (is.null(time) || !input$filter_time) quo(TRUE) else quo(TIME %in% time)
+    time_filter <- if (is.null(time)) quo(TRUE) else quo(TIME %in% time)
     df$REMARKS <- "View"
     df$STATIONS <- "View"
     df$REMARKS <- sprintf(
@@ -169,7 +169,7 @@ server <- function (input, output, session) {
       '<a href="#" onclick="Shiny.setInputValue(\'aff_stns_view\', %d, {priority: \'event\'});">%s</a>',
       seq_len(nrow(df)), df$STATIONS
     )
-    df$TIME <- sapply(str_split(df$TIME, ":"), function(x) paste(x[1], x[2], sep=":"))
+    if (input$filter_time) df$TIME <- sapply(str_split(df$TIME, ":"), function(x) paste(x[1], x[2], sep=":"))
     df$LINE <- sapply(str_split(df$LINE, ","), function(x) list(x))
     filtered_df <- df %>%
       filter(!!user_filter, !!date_filter, !!time_filter) %>%
