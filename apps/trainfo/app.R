@@ -84,7 +84,7 @@ ui <- fluidPage(
     tags$script(src = "../www/discord_data_transfer.js")
   ),
   
-  titlePanel(tags$p(style = "color: white; text-align: center", "Traⓘnfo Alpha 1.0")),
+  titlePanel(tags$p(style = "color: white; text-align: center", "Traⓘnfo Alpha 1.1.0")),
   sidebarLayout(
     sidebarPanel(
       width = 6,
@@ -97,10 +97,10 @@ ui <- fluidPage(
         condition = "input.report_select == 'search'",
         fluidRow(splitLayout(
           paste(""),
-          selectInput("train_line","Which line?", choices = c("NSL" = "nsl"), width = "80px"),
-          airDatepickerInput("date",HTML(paste(icon("calendar"), "What Date?")), dateFormat = "yyyy-MM-dd", view = "months", minView = "days", width = "100px", addon = "none", readonly = TRUE, autoClose = TRUE),
+          selectInput("train_line","Which line?", choices = c("ALL", "NSL", "EWL", "NEL", "CCL", "DTL", "TEL", "BPLRT", "SKLRT", "PGLRT"), width = "80px"),
+          airDatepickerInput("date",HTML(paste(icon("calendar"), "What Date?")), timepicker = TRUE, dateFormat = "yyyy-MM-dd", timepickerOpts = list(timeFormat = "HH:mm"), view = "months", minView = "days", width = "140px", addon = "none", readonly = TRUE, autoClose = TRUE),
           textInput("submitted_user","User?"),
-          cellWidths = c("10px", "80px", "100px","200px")
+          cellWidths = c("10px", "80px", "140px","200px")
         )),
         actionButton("search", "Search Reports", width = "140px", icon = icon("magnifying-glass"))
       ),
@@ -122,6 +122,9 @@ server <- function (input, output, session) {
   session$sendCustomMessage("fetch_sheet", '')
   train_info <- reactiveVal('')
   pre_sheet <- reactiveVal(NULL)
+  submitted_user <- reactive({input$submitted_user})
+  filter_date <- reactive({input$date})
+  train_line <- reactive({input$train_line})
   
   observeEvent(input$train_info_in, {
     train_info(input$train_info_in)
@@ -137,26 +140,38 @@ server <- function (input, output, session) {
   
   # Render table with clickable HTML in Action column
   report_sheet <- eventReactive(input$search, {
-    if (is.null(pre_sheet())) {return(NULL)}
-    else {
-      df <- pre_sheet()
-      df$REMARKS <- "View"
-      df$STATIONS <- "View"
-      df$REMARKS <- sprintf(
-        '<a href="#" onclick="Shiny.setInputValue(\'remark_view\', %d, {priority: \'event\'});">%s</a>',
-        seq_len(nrow(df)), df$REMARKS
+    if (is.null(pre_sheet())) return(NULL)
+    df <- pre_sheet()
+    user <- submitted_user()
+    if (!is.null(filter_date())) {
+      date <- str_split(filter_date(), " ")[[1]][1]
+      time <- sapply(str_split(str_split(filter_date(), " ")[[1]][2], ":"), function(x) paste(x[1], x[2], sep=":"))
+    } else {date <- NULL; time <- NULL}
+    line <- train_line()
+    user_filter <- if (user == '' || is.null(user) || is.na(user)) quo(TRUE) else quo(USER %in% user)
+    date_filter <- if (is.null(date)) quo(TRUE) else quo(DATE %in% date) 
+    time_filter <- if (is.null(time)) quo(TRUE) else quo(TIME %in% time)
+    df$REMARKS <- "View"
+    df$STATIONS <- "View"
+    df$REMARKS <- sprintf(
+      '<a href="#" onclick="Shiny.setInputValue(\'remark_view\', %d, {priority: \'event\'});">%s</a>',
+      seq_len(nrow(df)), df$REMARKS
+    )
+    df$STATIONS <- sprintf(
+      '<a href="#" onclick="Shiny.setInputValue(\'aff_stns_view\', %d, {priority: \'event\'});">%s</a>',
+      seq_len(nrow(df)), df$STATIONS
+    )
+    df$TIME <- sapply(str_split(df$TIME, ":"), function(x) paste(x[1], x[2], sep=":"))
+    df$LINE <- sapply(str_split(df$LINE, ","), function(x) list(x))
+    filtered_df <- df %>%
+      filter(!!user_filter, !!date_filter, !!time_filter) %>%
+      filter(sapply(LINE, function(x) if (line != "ALL") {line %in% x} else {TRUE}))
+    datatable(filtered_df, options = list(pagingType = "full_numbers"), escape = FALSE, selection = "none", rownames = FALSE) %>%
+      formatStyle(
+        colnames(df),
+        color = "white",
+        fontWeight = "bold"
       )
-      df$STATIONS <- sprintf(
-        '<a href="#" onclick="Shiny.setInputValue(\'aff_stns_view\', %d, {priority: \'event\'});">%s</a>',
-        seq_len(nrow(df)), df$STATIONS
-      )
-      datatable(df, options = list(pagingType = "full_numbers"), escape = FALSE, selection = "none", rownames = FALSE) %>%
-        formatStyle(
-          colnames(df),
-          color = "white",
-          fontWeight = "bold"
-        )
-    }
   })
   observe(report_sheet())
   output$report_sheet <- renderDT({report_sheet()})
@@ -184,7 +199,7 @@ server <- function (input, output, session) {
     showModal(
       modalDialog(
         title = paste("Affected Stations:"),
-        stations_content[clicked_row],
+        HTML(paste0("<p>",str_replace_all(stations_content[clicked_row],"\n","<br>"), "</p>")),
         easyClose = TRUE,
         footer = tagList(
           modalButton("Close")
