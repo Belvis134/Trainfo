@@ -153,7 +153,8 @@ server <- function (input, output, session) {
     user <- submitted_user()
     if (!is.null(filter_date())) {
       date <- str_split(filter_date(), " ")[[1]][1]
-      time <- sapply(str_split(str_split(filter_date(), " ")[[1]][2], ":"), function(x) paste(x[1], x[2], sep=":"))
+      if (input$filter_time) time <- sapply(str_split(str_split(filter_date(), " ")[[1]][2], ":"), function(x) paste(x[1], x[2], sep=":"))
+      else time <- NULL
     } else {date <- NULL; time <- NULL}
     line <- train_line()
     user_filter <- if (user == '' || is.null(user) || is.na(user)) quo(TRUE) else quo(USER %in% user)
@@ -169,7 +170,7 @@ server <- function (input, output, session) {
       '<a href="#" onclick="Shiny.setInputValue(\'aff_stns_view\', %d, {priority: \'event\'});">%s</a>',
       seq_len(nrow(df)), df$STATIONS
     )
-    if (input$filter_time) df$TIME <- sapply(str_split(df$TIME, ":"), function(x) paste(x[1], x[2], sep=":"))
+    if (input$filter_time) {df$TIME <- sapply(str_split(df$TIME, ":"), function(x) paste(x[1], x[2], sep=":"))}
     df$LINE <- sapply(str_split(df$LINE, ","), function(x) list(x))
     filtered_df <- df %>%
       filter(!!user_filter, !!date_filter, !!time_filter) %>%
