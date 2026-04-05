@@ -84,7 +84,7 @@ ui <- fluidPage(
     tags$script(src = "../www/discord_data_transfer.js")
   ),
   
-  titlePanel(tags$p(style = "color: white; text-align: center", "Traⓘnfo Alpha 1.1.0")),
+  titlePanel(tags$p(style = "color: white; text-align: center", "Traⓘnfo Alpha 1.1.1")),
   sidebarLayout(
     sidebarPanel(
       width = 6,
@@ -95,10 +95,11 @@ ui <- fluidPage(
       radioButtons("report_select","I would like to", choices = c("Search Reports" = "search", "Submit Report" = "submit", "Amend Report" = "amend"), inline = T),
       conditionalPanel(
         condition = "input.report_select == 'search'",
+        checkboxInput("filter_time", "Filter the time"),
         fluidRow(splitLayout(
           paste(""),
           selectInput("train_line","Which line?", choices = c("ALL", "NSL", "EWL", "NEL", "CCL", "DTL", "TEL", "BPLRT", "SKLRT", "PGLRT"), width = "80px"),
-          airDatepickerInput("date",HTML(paste(icon("calendar"), "What Date?")), timepicker = TRUE, dateFormat = "yyyy-MM-dd", timepickerOpts = list(timeFormat = "HH:mm"), view = "months", minView = "days", width = "140px", addon = "none", readonly = TRUE, autoClose = TRUE),
+          airDatepickerInput("date",HTML(paste(icon("calendar"), "What Date?")), timepicker = "input.filter_time", dateFormat = "yyyy-MM-dd", timepickerOpts = list(timeFormat = "HH:mm"), view = "months", minView = "days", width = "140px", addon = "none", readonly = TRUE, autoClose = TRUE),
           textInput("submitted_user","User?"),
           cellWidths = c("10px", "80px", "140px","200px")
         )),
@@ -126,6 +127,13 @@ server <- function (input, output, session) {
   filter_date <- reactive({input$date})
   train_line <- reactive({input$train_line})
   
+  observeEvent(input$filter_time, {
+    updateAirDateInput(
+      session,
+      "date",
+      options = (list(timepicker = input$filter_time))
+    )
+  })
   observeEvent(input$train_info_in, {
     train_info(input$train_info_in)
   })
