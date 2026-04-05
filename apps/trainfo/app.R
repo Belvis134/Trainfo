@@ -127,7 +127,6 @@ server <- function (input, output, session) {
     train_info(input$train_info_in)
   })
   observeEvent(input$sheets_in, {
-    print("Data Loading")
     raw_sheet <- fromJSON(input$sheets_in, simplify = FALSE)
     headers <- raw_sheet[[1]]
     rows <- do.call(rbind, raw_sheet[-1])
@@ -137,8 +136,7 @@ server <- function (input, output, session) {
   })
   
   # Render table with clickable HTML in Action column
-  output$report_sheet <- renderDT({
-    print("Table Loading")
+  report_sheet <- eventReactive(input$search, {
     if (is.null(pre_sheet())) {return(NULL)}
     else {
       df <- pre_sheet()
@@ -160,6 +158,8 @@ server <- function (input, output, session) {
         )
     }
   })
+  observe(report_sheet())
+  output$report_sheet <- renderDT({report_sheet()})
   
   observeEvent(input$remark_view, {
     df <- pre_sheet()
