@@ -158,7 +158,7 @@ server <- function (input, output, session) {
     line <- train_line()
     user_filter <- if (user == '' || is.null(user) || is.na(user)) quo(TRUE) else quo(USER %in% user)
     date_filter <- if (is.null(date)) quo(TRUE) else quo(DATE %in% date) 
-    time_filter <- if (is.null(time)) quo(TRUE) else quo(TIME %in% time)
+    time_filter <- if (is.null(time) || !input$filter_time) quo(TRUE) else quo(TIME %in% time)
     df$REMARKS <- "View"
     df$STATIONS <- "View"
     df$REMARKS <- sprintf(
