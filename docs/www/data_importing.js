@@ -33,10 +33,17 @@ document.addEventListener('DOMContentLoaded', function() {
   Shiny.addCustomMessageHandler('fetch_sheet', function(params) {
     return fetch("https://stcraft.myddns.me/repository/report-sheet").then(function(res) {
       return res.json().then(function(sheet) {
-      console.log(sheet)
       Shiny.setInputValue('sheets_in', JSON.stringify(sheet));
     })})
   });
+  
+  var link = document.getElementById('stations');
+  if (link) {
+    return fetch(link.href).then(function(res) {
+      return res.json().then(function(json) {
+      Shiny.setInputValue('station_names', JSON.stringify(json))
+    })})
+  }
 
   // Clear cache upon refresh
   window.onbeforeunload = function() {
