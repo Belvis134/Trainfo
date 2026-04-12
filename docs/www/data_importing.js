@@ -37,6 +37,16 @@ document.addEventListener('DOMContentLoaded', function() {
     })})
   });
   
+  Shiny.addCustomMessageHandler('publish_sheet', function(params) {
+    return fetch("https://stcraft.myddns.me/repository/publish-sheet", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: params
+    })
+  });
+  
   var link = document.getElementById('stations');
   if (link) {
     return fetch(link.href).then(function(res) {
