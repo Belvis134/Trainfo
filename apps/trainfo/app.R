@@ -97,7 +97,7 @@ ui <- fluidPage(
     tags$a(href = "../www/station_names.json", id = "stations")
   ),
   
-  titlePanel(tags$p(style = "color: white; text-align: center", "Traⓘnfo Beta 1.3.0")),
+  titlePanel(tags$p(style = "color: white; text-align: center", "Traⓘnfo Beta 1.3.1")),
   sidebarLayout(
     sidebarPanel(
       width = 6,
@@ -113,6 +113,7 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.report_select == 'submit'",
         tags$div(tags$h5(strong(class = "red_text" , tags$i(icon("triangle-exclamation")), "Each sector is only supposed to have one line!"))),
+        tags$div(tags$h5(strong(class = "red_text" , tags$i(icon("triangle-exclamation")), "LTA's official reports are ONLY reported as \"LTA DATAMALL\"!"))),
         tags$div(tags$h5(strong(class = "blue_text" , tags$i(icon("circle-info")), "You need to select a sector that is higher than your current max sector to create a new sector. The sector number auto jumps after sector creation."))),
         tags$div(tags$h5(strong(class = "blue_text" , tags$i(icon("circle-info")), "The current date is highlighted in blue, the current time can be quickly accessed by clicking the clock."))),
         tags$div(tags$h5(strong(class = "blue_text" , tags$i(icon("circle-info")), "When on the main sheet view and you would want to return to sector sheet view, click on \"Reload Edits\".")))
@@ -147,7 +148,8 @@ ui <- fluidPage(
           div(actionButton("reload_edits", "Reload Edits", width = "125px", icon= icon("arrow-rotate-right"))),
           div(actionButton("submit_report", "Submit Report", width = "130px", icon= icon("upload"))),
         )
-      )
+      ),
+      htmlOutput("result_msg")
     ),
     mainPanel(
       div(
@@ -165,6 +167,7 @@ server <- function (input, output, session) {
   session$sendCustomMessage("fetch_sheet", '')
   train_info <- reactiveVal('')
   names_json <- reactiveVal('')
+  result_msg <- reactiveVal('')
   sheet_out <- reactiveVal(NULL)
   sheet_out2 <- reactiveVal(data.frame(NULL))
   pre_sheet <- reactiveVal(NULL)
@@ -178,9 +181,26 @@ server <- function (input, output, session) {
   stations_till <- reactive({input$stations_till})
   remarks_input <- reactive({input$remarks_input})
   input_sector <- reactive({input$sector})
+  illegal_names <- c('data', 'lta')
   
+  fail <- function(msg, err = NULL) {
+    result_msg(
+      paste0("<span style='color:#BB0000; font-weight:bold;'>",
+        "<i class='fas fa-triangle-exclamation'></i> ",
+        msg, "</span>"
+      )
+    )
+    if (!is.null(err)) stop(err, call. = FALSE)
+    stop(call. = FALSE)
+  }
   init_data <- function() {
     user <- submitted_user()
+    if (nchar(user) > 30) fail(paste('Username length must not exceed 30 in length! Your username length is', nchar(user), 'characters long.'))
+    for (i in illegal_names) {
+      is_independent <- grepl(i, user, ignore.case = TRUE) & grepl(paste0("\\b", illegal_names[i], "\\b"), user, ignore.case = TRUE)
+      if (is_independent) fail(paste('Username cannot contain \"', paste(illegal_names, collapse = "\", \""), '\"!'))
+      if (grepl(i, user, ignore.case = TRUE) && !i %in% c('lta')) fail(paste('Username cannot contain \"', paste(illegal_names, collapse = "\", \""), '\"!'))
+    }
     date <- filter_date()
     time <- filter_time()
     line <- train_line()

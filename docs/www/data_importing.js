@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
             );
           });
         }
-        return response.text();
+        return (response.json())[0];
       })
       .then(function(train_info) {
         // Pass the CSV text to Shiny.
