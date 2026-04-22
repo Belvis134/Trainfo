@@ -15,11 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
             );
           });
         }
-        return (response.json())[0];
+        return response.json();
       })
       .then(function(train_info) {
+
         // Pass the CSV text to Shiny.
-        Shiny.setInputValue('train_info_in', train_info)
+        Shiny.setInputValue('train_info_in', train_info[0])
         // document.getElementById('train_info_out').innerHTML = train_info;
       })
       .catch(err => {
